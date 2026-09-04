@@ -130,4 +130,30 @@ public class ObfuscatorTest {
     Assert.assertTrue(output.contains(VALUE));
     Assert.assertFalse(output.contains(SECRET));
   }
+
+  @Test
+  public void testArrayOfObjects()
+      throws IOException {
+    JsonNode node = JsonUtils.stringToJsonNode(
+        "{\"configs\":[{\"name\":\"VALUE\",\"password\":\"SECRET\"},{\"token\":\"SECRET\"}]}");
+    String output = _obfuscator.toJsonString(node);
+    Assert.assertTrue(output.contains(VALUE));
+    Assert.assertFalse(output.contains(SECRET));
+  }
+
+  @Test
+  public void testTopLevelArray()
+      throws IOException {
+    JsonNode node = JsonUtils.stringToJsonNode("[{\"value\":\"VALUE\",\"secret\":\"SECRET\"}]");
+    String output = _obfuscator.toJsonString(node);
+    Assert.assertTrue(output.contains(VALUE));
+    Assert.assertFalse(output.contains(SECRET));
+  }
+
+  @Test
+  public void testNestedArrays()
+      throws IOException {
+    JsonNode node = JsonUtils.stringToJsonNode("{\"a\":[[{\"secret\":\"SECRET\"}]]}");
+    Assert.assertFalse(_obfuscator.toJsonString(node).contains(SECRET));
+  }
 }

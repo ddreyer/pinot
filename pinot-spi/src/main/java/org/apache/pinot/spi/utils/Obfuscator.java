@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -126,15 +127,20 @@ public final class Obfuscator {
 
   private JsonNode toJsonRecursive(JsonNode node) {
     if (node.isObject()) {
-      node.fieldNames().forEachRemaining(field -> {
+      ObjectNode objectNode = (ObjectNode) node;
+      // Materialize the field names first: the loop replaces values while iterating.
+      List<String> fields = new ArrayList<>();
+      objectNode.fieldNames().forEachRemaining(fields::add);
+      for (String field : fields) {
         if (_patterns.stream().anyMatch(pattern -> pattern.matcher(field).matches())) {
-          ((ObjectNode) node).put(field, _maskedValue);
-        } else if (node.isArray()) {
-          IntStream.range(0, node.size()).forEach(i -> ((ArrayNode) node).set(i, toJsonRecursive(node.get(i))));
-        } else if (node.isObject()) {
-          ((ObjectNode) node).put(field, toJsonRecursive(node.get(field)));
+          objectNode.put(field, _maskedValue);
+        } else {
+          objectNode.set(field, toJsonRecursive(objectNode.get(field)));
         }
-      });
+      }
+    } else if (node.isArray()) {
+      ArrayNode arrayNode = (ArrayNode) node;
+      IntStream.range(0, arrayNode.size()).forEach(i -> arrayNode.set(i, toJsonRecursive(arrayNode.get(i))));
     }
 
     return node;
